@@ -1,0 +1,35 @@
+{
+  "sharedDir": "shared",
+  "dependenciesDir": "extern",
+  "info": {
+    "name": "PlayerDataKeeper",
+    "id": "datakeeper",
+    "version": "0.1.0",
+    "url": null,
+    "additionalData": {
+      "overrideSoName": "libdatakeeper.so"
+    }
+  },
+  "dependencies": [
+    {
+      "id": "beatsaber-hook",
+      "versionRange": "^3.9.0",
+      "additionalData": {
+        "extraFiles": [
+          "src/inline-hook"
+        ]
+      }
+    },
+    {
+      "id": "modloader",
+      "versionRange": "=1.2.3",
+      "additionalData": {}
+    },
+    {
+      "id": "codegen",
+      "versionRange": "^0.22.0",
+      "additionalData": {}
+    }
+  ],
+  "additionalData": {}
+}

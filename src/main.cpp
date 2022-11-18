@@ -41,17 +41,27 @@ std::string GetBackupPath() {
 
 const auto copyopt = std::filesystem::copy_options::overwrite_existing;
 
+void HandleSave(std::string file_path) {
+    getLogger().info("File saved, path: %s", file_path.c_str());
+
+    if(file_path.starts_with(DATA_PATH)) {
+        getLogger().info("Copying for backup");
+        std::filesystem::copy(file_path, GetBackupPath() + file_path.substr(sizeof(DATA_PATH) - 1), copyopt);
+    }
+}
+
 MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void(*)(StringW, StringW)>(&File::WriteAllText), void, StringW path, StringW contents) {
 
     File_WriteAllText(path, contents);
 
-    getLogger().info("File saved, path: %s", static_cast<std::string>(path).c_str());
+    HandleSave(path);
+}
 
-    if(path.starts_with(DATA_PATH)) {
-        getLogger().info("Copying for backup");
-        std::string file = path;
-        std::filesystem::copy(file, GetBackupPath() + file.substr(sizeof(DATA_PATH) - 1), copyopt);
-    }
+MAKE_HOOK_MATCH(File_Replace, static_cast<void(*)(StringW, StringW, StringW)>(&File::Replace), void, StringW sourceFileName, StringW destinationFileName, StringW destinationBackupFileName) {
+
+    File_Replace(sourceFileName, destinationFileName, destinationBackupFileName);
+
+    HandleSave(destinationFileName);
 }
 
 MAKE_HOOK_FIND_INSTANCE(PlayerData_ctor, classof(PlayerData*), ".ctor", void, PlayerData* self, StringW playerId, StringW playerName, bool shouldShowTutorialPrompt, bool shouldShow360Warning, bool agreedToEula, bool didSelectLanguage, bool agreedToMultiplayerDisclaimer, bool avatarCreated, int didSelectRegionVersion, PlayerAgreements* playerAgreements, BeatmapDifficulty lastSelectedBeatmapDifficulty, BeatmapCharacteristicSO* lastSelectedBeatmapCharacteristic, GameplayModifiers* gameplayModifiers, PlayerSpecificSettings* playerSpecificSettings, PracticeSettings* practiceSettings, PlayerAllOverallStatsData* playerAllOverallStatsData, List<PlayerLevelStatsData*>* levelsStatsData, List<PlayerMissionStatsData*>* missionsStatsData, List<StringW>* showedMissionHelpIds, List<StringW>* guestPlayerNames, ColorSchemesSettings* colorSchemesSettings, OverrideEnvironmentSettings* overrideEnvironmentSettings, List<StringW>* favoritesLevelIds, MultiplayerModeSettings* multiplayerModeSettings, int currentDlcPromoDisplayCount, StringW currentDlcPromoId) {
@@ -97,6 +107,7 @@ extern "C" void load() {
 
     getLogger().info("Installing hooks...");
     INSTALL_HOOK(getLogger(), File_WriteAllText);
+    INSTALL_HOOK(getLogger(), File_Replace);
     INSTALL_HOOK(getLogger(), PlayerData_ctor);
     getLogger().info("Installed all hooks!");
 }

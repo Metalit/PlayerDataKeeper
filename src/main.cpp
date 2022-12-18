@@ -90,14 +90,14 @@ extern "C" void setup(ModInfo& info) {
         }
     } else
         filesystem::create_directory(GetBackupPath());
-        
+
     getConfig().Load();
     lightsSet = getConfig().config.HasMember("lightsSet");
     if(!lightsSet) {
         getConfig().config.AddMember("lightsSet", true, getConfig().config.GetAllocator());
         getConfig().Write();
     }
-	
+
     getLogger().info("Completed setup!");
 }
 

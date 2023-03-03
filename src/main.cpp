@@ -85,6 +85,7 @@ extern "C" void setup(ModInfo& info) {
 
     if(filesystem::exists(GetBackupPath())) {
         for(auto const& file : filesystem::directory_iterator(GetBackupPath())) {
+            getLogger().info("Using backup %s", file.path().string().c_str());
             if(!filesystem::is_directory(file))
                 filesystem::copy(file, DATA_PATH + file.path().filename().string(), copyopt);
         }

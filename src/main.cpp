@@ -46,9 +46,14 @@ const auto copyopt = std::filesystem::copy_options::overwrite_existing;
 void HandleSave(std::string file_path) {
     getLogger().info("File saved, path: %s", file_path.c_str());
 
-    if(file_path.starts_with(DATA_PATH)) {
-        getLogger().info("Copying for backup");
-        std::filesystem::copy(file_path, GetBackupPath() + file_path.substr(sizeof(DATA_PATH) - 1), copyopt);
+    if (file_path.starts_with(DATA_PATH) || file_path.starts_with(NOBACKUP_PATH)) {
+        for (const std::string& file : ALLOWED_FILES) {
+            if(file_path.ends_with("/" + file)) {
+                getLogger().info("Copying for backup");
+                std::filesystem::copy(file_path, GetBackupPath() + file, copyopt);
+                break;
+            }
+        }
     }
 }
 
@@ -85,10 +90,21 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
     using namespace std;
 
     if(filesystem::exists(GetBackupPath())) {
+        // Create these paths just in case.
+        filesystem::create_directories(NOBACKUP_PATH);
+        filesystem::create_directories(DATA_PATH);
+
         for(auto const& file : filesystem::directory_iterator(GetBackupPath())) {
-            getLogger().info("Using backup %s", file.path().string().c_str());
-            if(!filesystem::is_directory(file))
-                filesystem::copy(file, DATA_PATH + file.path().filename().string(), copyopt);
+            auto path = file.path();
+            getLogger().info("Using backup %s", path.string().c_str());
+
+            if(!filesystem::is_directory(file)) {
+                if (path.filename().string() == "settings.cfg") {
+                    filesystem::copy(file, NOBACKUP_PATH + path.filename().string(), copyopt);
+                } else {
+                    filesystem::copy(file, DATA_PATH + path.filename().string(), copyopt);
+                }
+            }
         }
     } else
         filesystem::create_directory(GetBackupPath());

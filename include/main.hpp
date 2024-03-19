@@ -6,6 +6,12 @@
 #include "beatsaber-hook/shared/utils/hooking.hpp"
 
 #define DATA_PATH "/storage/emulated/0/Android/data/com.beatgames.beatsaber/files/"
+#define NOBACKUP_PATH "/storage/emulated/0/Android/data/com.beatgames.beatsaber/no_backup/"
+#define ALLOWED_FILES { \
+    "AvatarData.dat", "LocalDailyLeaderboards.dat", \
+    "LocalLeaderboards.dat", "PlayerData.dat", \
+    "settings.cfg" \
+}
 
 Logger& getLogger();
 

@@ -56,14 +56,14 @@ MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void(*)(StringW, StringW)>(&File:
 
     File_WriteAllText(path, contents);
 
-    HandleSave(path);
+    HandleSave(std::filesystem::canonical((std::string)path));
 }
 
 MAKE_HOOK_MATCH(File_Replace, static_cast<void(*)(StringW, StringW, StringW)>(&File::Replace), void, StringW sourceFileName, StringW destinationFileName, StringW destinationBackupFileName) {
 
     File_Replace(sourceFileName, destinationFileName, destinationBackupFileName);
 
-    HandleSave(destinationFileName);
+    HandleSave(std::filesystem::canonical((std::string)destinationFileName));
 }
 
 MAKE_HOOK_FIND_INSTANCE(PlayerData_ctor, classof(PlayerData*), ".ctor", void, PlayerData* self, StringW playerId, StringW playerName, bool shouldShowTutorialPrompt, bool shouldShow360Warning, bool agreedToEula, bool didSelectLanguage, bool agreedToMultiplayerDisclaimer, int32_t didSelectRegionVersion, StringW selectedAvatarSystemTypeId, PlayerAgreements* playerAgreements, BeatmapDifficulty lastSelectedBeatmapDifficulty, BeatmapCharacteristicSO* lastSelectedBeatmapCharacteristic, GameplayModifiers* gameplayModifiers, PlayerSpecificSettings* playerSpecificSettings, PracticeSettings* practiceSettings, PlayerAllOverallStatsData* playerAllOverallStatsData, List_1<PlayerLevelStatsData*>* levelsStatsData, List_1<PlayerMissionStatsData*>* missionsStatsData, List_1<StringW>* showedMissionHelpIds, List_1<StringW>* guestPlayerNames, ColorSchemesSettings* colorSchemesSettings, OverrideEnvironmentSettings* overrideEnvironmentSettings, List_1<StringW>* favoritesLevelIds, MultiplayerModeSettings* multiplayerModeSettings, int32_t currentDlcPromoDisplayCount, StringW currentDlcPromoId, UserAgeCategory userAgeCategory, PlayerSensitivityFlag desiredSensitivityFlag) {

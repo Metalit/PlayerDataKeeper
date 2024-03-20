@@ -26,11 +26,6 @@ using namespace System::Collections::Generic;
 static modloader::ModInfo modInfo{MOD_ID, VERSION, 0};
 static bool lightsSet = false;
 
-Logger& getLogger() {
-    static Logger* logger = new Logger(modInfo);
-    return *logger;
-}
-
 Configuration& getConfig() {
     static Configuration config = Configuration(modInfo);
     return config;
@@ -44,12 +39,12 @@ std::string GetBackupPath() {
 const auto copyopt = std::filesystem::copy_options::overwrite_existing;
 
 void HandleSave(std::string file_path) {
-    getLogger().info("File saved, path: %s", file_path.c_str());
+    Logger.info("File saved, path: %s", file_path.c_str());
 
     if (file_path.starts_with(DATA_PATH) || file_path.starts_with(NOBACKUP_PATH)) {
         for (const std::string& file : ALLOWED_FILES) {
             if(file_path.ends_with("/" + file)) {
-                getLogger().info("Copying for backup");
+                Logger.info("Copying for backup");
                 std::filesystem::copy(file_path, GetBackupPath() + file, copyopt);
                 break;
             }
@@ -96,7 +91,7 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
 
         for(auto const& file : filesystem::directory_iterator(GetBackupPath())) {
             auto path = file.path();
-            getLogger().info("Using backup %s", path.string().c_str());
+            Logger.info("Using backup %s", path.string().c_str());
 
             if(!filesystem::is_directory(file)) {
                 if (path.filename().string() == "settings.cfg") {
@@ -116,14 +111,14 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
         getConfig().Write();
     }
 
-    getLogger().info("Completed setup!");
+    Logger.info("Completed setup!");
 }
 
 // Called later on in the game loading
 PLAYERDATAKEEPER_EXPORT_FUNC void late_load() {
-    getLogger().info("Installing hooks...");
-    INSTALL_HOOK(getLogger(), File_WriteAllText);
-    INSTALL_HOOK(getLogger(), File_Replace);
-    INSTALL_HOOK(getLogger(), PlayerData_ctor);
-    getLogger().info("Installed all hooks!");
+    Logger.info("Installing hooks...");
+    INSTALL_HOOK(Logger, File_WriteAllText);
+    INSTALL_HOOK(Logger, File_Replace);
+    INSTALL_HOOK(Logger, PlayerData_ctor);
+    Logger.info("Installed all hooks!");
 }

@@ -13,8 +13,15 @@
   "dependencies": [
     {
       "id": "beatsaber-hook",
-      "versionRange": "=5.0.9",
+      "versionRange": "^5.1.2",
       "additionalData": {}
+    },
+    {
+      "id": "paper",
+      "versionRange": "^3.0.0",
+      "additionalData": {
+        "private": true
+      }
     },
     {
       "id": "bs-cordl",

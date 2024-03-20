@@ -13,7 +13,7 @@
     "settings.cfg" \
 }
 
-Logger& getLogger();
+static constexpr auto Logger = Paper::ConstLoggerContext(MOD_ID);
 
 #define PLAYERDATAKEEPER_EXPORT __attribute__((visibility("default")))
 #ifdef __cplusplus

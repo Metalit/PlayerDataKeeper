@@ -48,9 +48,9 @@
             "label": "QMOD Build",
             "detail": "Builds a .qmod to be installed into BMBF or QuestPatcher",
             "type": "shell",
-            "command": "./buildQMOD.ps1",
+            "command": "./createqmod.ps1",
             "windows": {
-                "command": "./buildQMOD.ps1"
+                "command": "./createqmod.ps1"
             },
             "args": [],
             "group": "build",

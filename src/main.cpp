@@ -59,7 +59,7 @@ MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void(*)(StringW, StringW)>(&File:
     HandleSave(std::filesystem::canonical((std::string)path));
 }
 
-MAKE_HOOK_MATCH(File_Replace, static_cast<void(*)(StringW, StringW, StringW)>(&File::Replace), void, StringW sourceFileName, StringW destinationFileName, StringW destinationBackupFileName) {
+MAKE_HOOK_MATCH_PDK(File_Replace, static_cast<void(*)(StringW, StringW, StringW)>(&File::Replace), void, StringW sourceFileName, StringW destinationFileName, StringW destinationBackupFileName) {
 
     File_Replace(sourceFileName, destinationFileName, destinationBackupFileName);
 

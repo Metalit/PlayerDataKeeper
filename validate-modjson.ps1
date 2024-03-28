@@ -1,8 +1,11 @@
 $mod = "./mod.json"
+$template = "./mod.template.json"
+$modTemplate = -not (Test-Path -Path $template) || Get-Item $template
+$modJson = -not (Test-Path -Path $mod) || Get-Item $mod
 
-if (-not (Test-Path -Path $mod)) {
+if (-not (Test-Path -Path $mod) -or $modTemplate.LastWriteTime -gt $modJson.LastWriteTime) {
     if (Test-Path -Path ".\mod.template.json") {
-        & qpm-rust qmod build
+        & qpm qmod build
         if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
         }

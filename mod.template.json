@@ -6,10 +6,10 @@
   "author": "Metalit",
   "version": "${version}",
   "packageId": "com.beatgames.beatsaber",
-  "packageVersion": "1.28.0_4124311467",
+  "packageVersion": "1.35.0_8016709773",
   "description": "Preserves your player data (scores, controller offset, etc) between updates or any other time it might be lost",
   "dependencies": [],
-  "modFiles": [],
+  "modFiles": ["${binary}"],
   "libraryFiles": [],
   "fileCopies": []
 }

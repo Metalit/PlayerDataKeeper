@@ -1,6 +1,7 @@
 #include "main.hpp"
 
 #include "System/IO/File.hpp"
+#include "System/Collections/Generic/List_1.hpp"
 
 #include "GlobalNamespace/PlayerData.hpp"
 
@@ -20,14 +21,10 @@
 
 using namespace GlobalNamespace;
 using namespace System::IO;
+using namespace System::Collections::Generic;
 
-static ModInfo modInfo;
+static modloader::ModInfo modInfo{MOD_ID, VERSION, 0};
 static bool lightsSet = false;
-
-Logger& getLogger() {
-    static Logger* logger = new Logger(modInfo);
-    return *logger;
-}
 
 Configuration& getConfig() {
     static Configuration config = Configuration(modInfo);
@@ -42,11 +39,16 @@ std::string GetBackupPath() {
 const auto copyopt = std::filesystem::copy_options::overwrite_existing;
 
 void HandleSave(std::string file_path) {
-    getLogger().info("File saved, path: %s", file_path.c_str());
+    Logger.info("File saved, path: %s", file_path.c_str());
 
-    if(file_path.starts_with(DATA_PATH)) {
-        getLogger().info("Copying for backup");
-        std::filesystem::copy(file_path, GetBackupPath() + file_path.substr(sizeof(DATA_PATH) - 1), copyopt);
+    if (file_path.starts_with(DATA_PATH) || file_path.starts_with(NOBACKUP_PATH)) {
+        for (const std::string& file : ALLOWED_FILES) {
+            if(file_path.ends_with("/" + file)) {
+                Logger.info("Copying for backup");
+                std::filesystem::copy(file_path, GetBackupPath() + file, copyopt);
+                break;
+            }
+        }
     }
 }
 
@@ -54,40 +56,50 @@ MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void(*)(StringW, StringW)>(&File:
 
     File_WriteAllText(path, contents);
 
-    HandleSave(path);
+    HandleSave(std::filesystem::canonical((std::string)path));
 }
 
-MAKE_HOOK_MATCH(File_Replace, static_cast<void(*)(StringW, StringW, StringW)>(&File::Replace), void, StringW sourceFileName, StringW destinationFileName, StringW destinationBackupFileName) {
+MAKE_HOOK_MATCH(File_Replace, static_cast<void(*)(StringW, StringW, StringW, bool)>(&File::Replace), void, StringW sourceFileName, StringW destinationFileName, StringW destinationBackupFileName, bool ignoreMetadataErrors) {
 
-    File_Replace(sourceFileName, destinationFileName, destinationBackupFileName);
+    File_Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
 
-    HandleSave(destinationFileName);
+    HandleSave(std::filesystem::canonical((std::string)destinationFileName));
 }
 
-MAKE_HOOK_FIND_INSTANCE(PlayerData_ctor, classof(PlayerData*), ".ctor", void, PlayerData* self, StringW playerId, StringW playerName, bool shouldShowTutorialPrompt, bool shouldShow360Warning, bool agreedToEula, bool didSelectLanguage, bool agreedToMultiplayerDisclaimer, bool avatarCreated, int didSelectRegionVersion, PlayerAgreements* playerAgreements, BeatmapDifficulty lastSelectedBeatmapDifficulty, BeatmapCharacteristicSO* lastSelectedBeatmapCharacteristic, GameplayModifiers* gameplayModifiers, PlayerSpecificSettings* playerSpecificSettings, PracticeSettings* practiceSettings, PlayerAllOverallStatsData* playerAllOverallStatsData, List<PlayerLevelStatsData*>* levelsStatsData, List<PlayerMissionStatsData*>* missionsStatsData, List<StringW>* showedMissionHelpIds, List<StringW>* guestPlayerNames, ColorSchemesSettings* colorSchemesSettings, OverrideEnvironmentSettings* overrideEnvironmentSettings, List<StringW>* favoritesLevelIds, MultiplayerModeSettings* multiplayerModeSettings, int currentDlcPromoDisplayCount, StringW currentDlcPromoId) {
+MAKE_HOOK_FIND_INSTANCE(PlayerData_ctor, classof(PlayerData*), ".ctor", void, PlayerData* self, StringW playerId, StringW playerName, bool shouldShowTutorialPrompt, bool shouldShow360Warning, bool agreedToEula, bool didSelectLanguage, bool agreedToMultiplayerDisclaimer, int32_t didSelectRegionVersion, StringW selectedAvatarSystemTypeId, PlayerAgreements* playerAgreements, BeatmapDifficulty lastSelectedBeatmapDifficulty, BeatmapCharacteristicSO* lastSelectedBeatmapCharacteristic, GameplayModifiers* gameplayModifiers, PlayerSpecificSettings* playerSpecificSettings, PracticeSettings* practiceSettings, PlayerAllOverallStatsData* playerAllOverallStatsData, List_1<PlayerLevelStatsData*>* levelsStatsData, List_1<PlayerMissionStatsData*>* missionsStatsData, List_1<StringW>* showedMissionHelpIds, List_1<StringW>* guestPlayerNames, ColorSchemesSettings* colorSchemesSettings, OverrideEnvironmentSettings* overrideEnvironmentSettings, List_1<StringW>* favoritesLevelIds, MultiplayerModeSettings* multiplayerModeSettings, int32_t currentDlcPromoDisplayCount, StringW currentDlcPromoId, UserAgeCategory userAgeCategory, PlayerSensitivityFlag desiredSensitivityFlag) {
 
     if(!lightsSet) {
-        playerSpecificSettings->environmentEffectsFilterDefaultPreset = EnvironmentEffectsFilterPreset::AllEffects;
-        playerSpecificSettings->environmentEffectsFilterExpertPlusPreset = EnvironmentEffectsFilterPreset::AllEffects;
+        playerSpecificSettings->__cordl_internal_set__environmentEffectsFilterDefaultPreset(EnvironmentEffectsFilterPreset::AllEffects);
+        playerSpecificSettings->__cordl_internal_set__environmentEffectsFilterExpertPlusPreset(EnvironmentEffectsFilterPreset::AllEffects);
         lightsSet = true;
     }
 
-    PlayerData_ctor(self, playerId, playerName, shouldShowTutorialPrompt, shouldShow360Warning, agreedToEula, didSelectLanguage, agreedToMultiplayerDisclaimer, avatarCreated, didSelectRegionVersion, playerAgreements, lastSelectedBeatmapDifficulty, lastSelectedBeatmapCharacteristic, gameplayModifiers, playerSpecificSettings, practiceSettings, playerAllOverallStatsData, levelsStatsData, missionsStatsData, showedMissionHelpIds, guestPlayerNames, colorSchemesSettings, overrideEnvironmentSettings, favoritesLevelIds, multiplayerModeSettings, currentDlcPromoDisplayCount, currentDlcPromoId);
+    PlayerData_ctor(self, playerId, playerName, shouldShowTutorialPrompt, shouldShow360Warning, agreedToEula, didSelectLanguage, agreedToMultiplayerDisclaimer, didSelectRegionVersion, selectedAvatarSystemTypeId, playerAgreements, lastSelectedBeatmapDifficulty, lastSelectedBeatmapCharacteristic, gameplayModifiers, playerSpecificSettings, practiceSettings, playerAllOverallStatsData, levelsStatsData, missionsStatsData, showedMissionHelpIds, guestPlayerNames, colorSchemesSettings, overrideEnvironmentSettings, favoritesLevelIds, multiplayerModeSettings, currentDlcPromoDisplayCount, currentDlcPromoId, userAgeCategory, desiredSensitivityFlag);
 }
 
 // Called at the early stages of game loading
-extern "C" void setup(ModInfo& info) {
+PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
     info.id = MOD_ID;
     info.version = VERSION;
-    modInfo = info;
 
     using namespace std;
 
     if(filesystem::exists(GetBackupPath())) {
+        // Create these paths just in case.
+        filesystem::create_directories(NOBACKUP_PATH);
+        filesystem::create_directories(DATA_PATH);
+
         for(auto const& file : filesystem::directory_iterator(GetBackupPath())) {
-            getLogger().info("Using backup %s", file.path().string().c_str());
-            if(!filesystem::is_directory(file))
-                filesystem::copy(file, DATA_PATH + file.path().filename().string(), copyopt);
+            auto path = file.path();
+            Logger.info("Using backup %s", path.string().c_str());
+
+            if(!filesystem::is_directory(file)) {
+                if (path.filename().string() == "settings.cfg") {
+                    filesystem::copy(file, NOBACKUP_PATH + path.filename().string(), copyopt);
+                } else {
+                    filesystem::copy(file, DATA_PATH + path.filename().string(), copyopt);
+                }
+            }
         }
     } else
         filesystem::create_directory(GetBackupPath());
@@ -99,16 +111,14 @@ extern "C" void setup(ModInfo& info) {
         getConfig().Write();
     }
 
-    getLogger().info("Completed setup!");
+    Logger.info("Completed setup!");
 }
 
 // Called later on in the game loading
-extern "C" void load() {
-    il2cpp_functions::Init();
-
-    getLogger().info("Installing hooks...");
-    INSTALL_HOOK(getLogger(), File_WriteAllText);
-    INSTALL_HOOK(getLogger(), File_Replace);
-    INSTALL_HOOK(getLogger(), PlayerData_ctor);
-    getLogger().info("Installed all hooks!");
+PLAYERDATAKEEPER_EXPORT_FUNC void late_load() {
+    Logger.info("Installing hooks...");
+    INSTALL_HOOK(Logger, File_WriteAllText);
+    INSTALL_HOOK(Logger, File_Replace);
+    INSTALL_HOOK(Logger, PlayerData_ctor);
+    Logger.info("Installed all hooks!");
 }

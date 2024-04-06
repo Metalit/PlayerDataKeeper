@@ -25,6 +25,8 @@ using namespace System::Collections::Generic;
 
 static modloader::ModInfo modInfo{MOD_ID, VERSION, 0};
 static bool lightsSet = false;
+static std::string filesPath;
+static std::string noBackupPath;
 
 Configuration& getConfig() {
     static Configuration config = Configuration(modInfo);
@@ -39,9 +41,9 @@ std::string GetBackupPath() {
 const auto copyopt = std::filesystem::copy_options::overwrite_existing;
 
 void HandleSave(std::string file_path) {
-    Logger.info("File saved, path: %s", file_path.c_str());
+    Logger.info("File saved, path: {}", file_path.c_str());
 
-    if (file_path.starts_with(DATA_PATH) || file_path.starts_with(NOBACKUP_PATH)) {
+    if (file_path.starts_with(filesPath) || file_path.starts_with(noBackupPath)) {
         for (const std::string& file : ALLOWED_FILES) {
             if(file_path.ends_with("/" + file)) {
                 Logger.info("Copying for backup");
@@ -50,6 +52,17 @@ void HandleSave(std::string file_path) {
             }
         }
     }
+}
+
+/// @brief Creates the path if it needs to be and returns the canonical path.
+/// @param path The input path.
+/// @return The canonical version of this path.
+std::string GetCanonical(std::string path) {
+    using namespace std;
+
+    filesystem::create_directory(path);
+
+    return filesystem::canonical(path);
 }
 
 MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void(*)(StringW, StringW)>(&File::WriteAllText), void, StringW path, StringW contents) {
@@ -82,28 +95,6 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
     info.id = MOD_ID;
     info.version = VERSION;
 
-    using namespace std;
-
-    if(filesystem::exists(GetBackupPath())) {
-        // Create these paths just in case.
-        filesystem::create_directories(NOBACKUP_PATH);
-        filesystem::create_directories(DATA_PATH);
-
-        for(auto const& file : filesystem::directory_iterator(GetBackupPath())) {
-            auto path = file.path();
-            Logger.info("Using backup %s", path.string().c_str());
-
-            if(!filesystem::is_directory(file)) {
-                if (path.filename().string() == "settings.cfg") {
-                    filesystem::copy(file, NOBACKUP_PATH + path.filename().string(), copyopt);
-                } else {
-                    filesystem::copy(file, DATA_PATH + path.filename().string(), copyopt);
-                }
-            }
-        }
-    } else
-        filesystem::create_directory(GetBackupPath());
-
     getConfig().Load();
     lightsSet = getConfig().config.HasMember("lightsSet");
     if(!lightsSet) {
@@ -116,6 +107,31 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
 
 // Called later on in the game loading
 PLAYERDATAKEEPER_EXPORT_FUNC void late_load() {
+    using namespace std;
+
+    filesPath = GetCanonical(modloader::get_external_dir()) + "/";
+    noBackupPath = GetCanonical(filesPath + "../no_backup") + "/";
+
+    Logger.info("files path: {}", filesPath);
+    Logger.info("no_backup path: {}", noBackupPath);
+
+    if(filesystem::exists(GetBackupPath())) {
+
+        for(auto const& file : filesystem::directory_iterator(GetBackupPath())) {
+            auto path = file.path();
+            Logger.info("Using backup {}", path.string().c_str());
+
+            if(!filesystem::is_directory(file)) {
+                if (path.filename().string() == "settings.cfg") {
+                    filesystem::copy(file, noBackupPath + path.filename().string(), copyopt);
+                } else {
+                    filesystem::copy(file, filesPath + path.filename().string(), copyopt);
+                }
+            }
+        }
+    } else
+        filesystem::create_directory(GetBackupPath());
+
     Logger.info("Installing hooks...");
     INSTALL_HOOK(Logger, File_WriteAllText);
     INSTALL_HOOK(Logger, File_Replace);

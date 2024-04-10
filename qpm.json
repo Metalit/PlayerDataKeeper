@@ -4,7 +4,7 @@
   "info": {
     "name": "PlayerDataKeeper",
     "id": "datakeeper",
-    "version": "0.1.7",
+    "version": "0.1.9",
     "url": null,
     "additionalData": {
       "overrideSoName": "libdatakeeper.so"
@@ -25,12 +25,12 @@
     },
     {
       "id": "bs-cordl",
-      "versionRange": "3500.*",
+      "versionRange": "3600.*",
       "additionalData": {}
     },
     {
       "id": "custom-types",
-      "versionRange": "^0.17.6",
+      "versionRange": "^0.17.7",
       "additionalData": {}
     },
     {

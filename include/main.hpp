@@ -1,9 +1,6 @@
 #pragma once
 
-#include "scotland2/shared/modloader.h"
-
-#include "beatsaber-hook/shared/config/config-utils.hpp"
-#include "beatsaber-hook/shared/utils/hooking.hpp"
+#include "paper/shared/logger.hpp"
 
 #define DATA_PATH "/storage/emulated/0/Android/data/com.beatgames.beatsaber/files/"
 #define NOBACKUP_PATH "/storage/emulated/0/Android/data/com.beatgames.beatsaber/no_backup/"
@@ -13,7 +10,7 @@
     "settings.cfg" \
 }
 
-static constexpr auto Logger = Paper::ConstLoggerContext(MOD_ID);
+static constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);
 
 #define PLAYERDATAKEEPER_EXPORT __attribute__((visibility("default")))
 #ifdef __cplusplus

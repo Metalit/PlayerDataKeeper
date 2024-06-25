@@ -7,7 +7,8 @@
 #define ALLOWED_FILES { \
     "AvatarData.dat", "LocalDailyLeaderboards.dat", \
     "LocalLeaderboards.dat", "PlayerData.dat", \
-    "settings.cfg" \
+    "settings.cfg", "MainSettings.json", \
+    "GraphicsSettings.json" \
 }
 
 static constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);

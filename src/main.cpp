@@ -164,7 +164,9 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
             logger.info("Using backup {}", path.string().c_str());
 
             if (!filesystem::is_directory(file)) {
-                if (path.filename().string() == "settings.cfg")
+                if (path.filename().string() == "settings.cfg" ||
+                    path.filename().string() == "MainSettings.json" ||
+                    path.filename().string() == "GraphicsSettings.json")
                     filesystem::copy(file, NOBACKUP_PATH + path.filename().string(), copyopt);
                 else
                     filesystem::copy(file, DATA_PATH + path.filename().string(), copyopt);

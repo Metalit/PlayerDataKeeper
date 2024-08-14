@@ -1,4 +1,5 @@
 {
+  "version": "0.1.0",
   "sharedDir": "shared",
   "dependenciesDir": "extern",
   "info": {
@@ -35,12 +36,15 @@
       "tomb": [
         "pwsh ./scripts/pull-tombstone.ps1 -analyze"
       ]
-    }
+    },
+    "qmodIncludeDirs": [],
+    "qmodIncludeFiles": [],
+    "qmodOutput": null
   },
   "dependencies": [
     {
       "id": "beatsaber-hook",
-      "versionRange": "^5.1.6",
+      "versionRange": "^5.1.9",
       "additionalData": {}
     },
     {
@@ -68,6 +72,5 @@
         "private": true
       }
     }
-  ],
-  "additionalData": {}
+  ]
 }

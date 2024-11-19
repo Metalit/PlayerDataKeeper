@@ -1,6 +1,6 @@
 #include "main.hpp"
 
-#include <filesystem>
+#include <regex>
 
 #include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
 #include "GlobalNamespace/ColorSchemesSettings.hpp"
@@ -26,6 +26,8 @@ using namespace System::IO;
 static modloader::ModInfo modInfo{MOD_ID, VERSION, 0};
 static bool lightsSet = false;
 
+static std::string filesPath;
+
 Configuration& getConfig() {
     static Configuration config = Configuration(modInfo);
     return config;
@@ -38,17 +40,13 @@ std::string GetBackupPath() {
 
 constexpr auto copyopt = std::filesystem::copy_options::overwrite_existing;
 
-void HandleSave(std::string file_path) {
-    logger.info("File saved, path: {}", file_path.c_str());
+void HandleSave(std::string filePath) {
+    auto fullPath = std::filesystem::canonical(filePath);
+    logger.info("File saved, path: {} ({})", fullPath.string(), filePath);
 
-    if (file_path.starts_with(DATA_PATH) || file_path.starts_with(NOBACKUP_PATH)) {
-        for (std::string const& file : ALLOWED_FILES) {
-            if (file_path.ends_with("/" + file)) {
-                logger.info("Copying for backup");
-                std::filesystem::copy(file_path, GetBackupPath() + file, copyopt);
-                break;
-            }
-        }
+    if (fullPath.parent_path() == filesPath && !std::filesystem::is_directory(fullPath) && !std::regex_search(filePath, BLACKLIST)) {
+        logger.info("Copying for backup: {} ({})", fullPath.string(), filePath);
+        std::filesystem::copy(fullPath, GetBackupPath() + fullPath.filename().string(), copyopt);
     }
 }
 
@@ -56,7 +54,7 @@ MAKE_HOOK_MATCH(File_WriteAllText, &File::WriteAllText, void, StringW path, Stri
 
     File_WriteAllText(path, contents);
 
-    HandleSave(std::filesystem::canonical((std::string) path));
+    HandleSave(path);
 }
 
 MAKE_HOOK_MATCH(
@@ -70,7 +68,7 @@ MAKE_HOOK_MATCH(
 ) {
     File_Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
 
-    HandleSave(std::filesystem::canonical((std::string) destinationFileName));
+    HandleSave(destinationFileName);
 }
 
 MAKE_HOOK_FIND_INSTANCE(
@@ -109,8 +107,8 @@ MAKE_HOOK_FIND_INSTANCE(
     PlayerSensitivityFlag desiredSensitivityFlag
 ) {
     if (!lightsSet) {
-        playerSpecificSettings->__cordl_internal_set__environmentEffectsFilterDefaultPreset(EnvironmentEffectsFilterPreset::AllEffects);
-        playerSpecificSettings->__cordl_internal_set__environmentEffectsFilterExpertPlusPreset(EnvironmentEffectsFilterPreset::AllEffects);
+        playerSpecificSettings->_environmentEffectsFilterDefaultPreset = EnvironmentEffectsFilterPreset::AllEffects;
+        playerSpecificSettings->_environmentEffectsFilterExpertPlusPreset = EnvironmentEffectsFilterPreset::AllEffects;
         lightsSet = true;
     }
 
@@ -148,26 +146,21 @@ MAKE_HOOK_FIND_INSTANCE(
 }
 
 // Called at the early stages of game loading
-PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
-    info.id = MOD_ID;
-    info.version = VERSION;
+PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo* info) {
+    *info = modInfo.to_c();
+
+    Paper::Logger::RegisterFileContextId(MOD_ID);
 
     using namespace std;
 
+    filesPath = filesystem::canonical(modloader::get_external_dir());
+    filesystem::create_directories(filesPath);
+
     if (filesystem::exists(GetBackupPath())) {
-        // Create these paths just in case.
-        filesystem::create_directories(NOBACKUP_PATH);
-        filesystem::create_directories(DATA_PATH);
-
         for (auto const& file : filesystem::directory_iterator(GetBackupPath())) {
-            auto path = file.path();
-            logger.info("Using backup {}", path.string().c_str());
-
             if (!filesystem::is_directory(file)) {
-                if (path.filename().string() == "settings.cfg")
-                    filesystem::copy(file, NOBACKUP_PATH + path.filename().string(), copyopt);
-                else
-                    filesystem::copy(file, DATA_PATH + path.filename().string(), copyopt);
+                logger.info("Loading backup: {}", file.path().string());
+                filesystem::copy(file, filesPath / file.path().filename(), copyopt);
             }
         }
     } else
@@ -183,8 +176,7 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
     logger.info("Completed setup!");
 }
 
-// Called later on in the game loading
-PLAYERDATAKEEPER_EXPORT_FUNC void late_load() {
+PLAYERDATAKEEPER_EXPORT_FUNC void load() {
     logger.info("Installing hooks...");
     INSTALL_HOOK(logger, File_WriteAllText);
     INSTALL_HOOK(logger, File_Replace);

@@ -2,11 +2,12 @@
 
 #include <regex>
 
-#include "paper/shared/logger.hpp"
+#include "paper2_scotland2/shared/logger.hpp"
 
 #define BLACKLIST std::regex("tombstone_..")
 
-static constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);
+static inline constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);
+static inline modloader::ModInfo modInfo{MOD_ID, VERSION, 0};
 
 #define PLAYERDATAKEEPER_EXPORT __attribute__((visibility("default")))
 #ifdef __cplusplus

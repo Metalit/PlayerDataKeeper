@@ -1,6 +1,7 @@
 #include "main.hpp"
 
 #include <regex>
+#include <string>
 
 #include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
 #include "GlobalNamespace/ColorSchemesSettings.hpp"
@@ -18,24 +19,18 @@
 #include "System/IO/File.hpp"
 #include "beatsaber-hook/shared/config/config-utils.hpp"
 #include "beatsaber-hook/shared/utils/hooking.hpp"
+#include "config.h"
 #include "scotland2/shared/modloader.h"
 
 using namespace GlobalNamespace;
 using namespace System::IO;
+using namespace System::Collections::Generic;
 
-static modloader::ModInfo modInfo{MOD_ID, VERSION, 0};
 static bool lightsSet = false;
-
 static std::string filesPath;
 
-Configuration& getConfig() {
-    static Configuration config = Configuration(modInfo);
-    return config;
-}
-
 std::string GetBackupPath() {
-    static std::string path = getDataDir(modInfo);
-    return path;
+    return getConfig().backupPath.GetValue();
 }
 
 constexpr auto copyopt = std::filesystem::copy_options::overwrite_existing;
@@ -50,7 +45,7 @@ void HandleSave(std::string filePath) {
     }
 }
 
-MAKE_HOOK_MATCH(File_WriteAllText, &File::WriteAllText, void, StringW path, StringW contents) {
+MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void (*)(StringW, StringW)>(&File::WriteAllText), void, StringW path, StringW contents) {
 
     File_WriteAllText(path, contents);
 
@@ -84,7 +79,7 @@ MAKE_HOOK_FIND_INSTANCE(
     bool agreedToEula,
     bool didSelectLanguage,
     bool agreedToMultiplayerDisclaimer,
-    int didSelectRegionVersion,
+    int32_t didSelectRegionVersion,
     StringW selectedAvatarSystemTypeId,
     PlayerAgreements* playerAgreements,
     BeatmapDifficulty lastSelectedBeatmapDifficulty,
@@ -93,15 +88,15 @@ MAKE_HOOK_FIND_INSTANCE(
     PlayerSpecificSettings* playerSpecificSettings,
     PracticeSettings* practiceSettings,
     PlayerAllOverallStatsData* playerAllOverallStatsData,
-    List<PlayerLevelStatsData*>* levelsStatsData,
-    List<PlayerMissionStatsData*>* missionsStatsData,
-    List<StringW>* showedMissionHelpIds,
-    List<StringW>* guestPlayerNames,
+    List_1<PlayerLevelStatsData*>* levelsStatsData,
+    List_1<PlayerMissionStatsData*>* missionsStatsData,
+    List_1<StringW>* showedMissionHelpIds,
+    List_1<StringW>* guestPlayerNames,
     ColorSchemesSettings* colorSchemesSettings,
     OverrideEnvironmentSettings* overrideEnvironmentSettings,
-    List<StringW>* favoritesLevelIds,
+    List_1<StringW>* favoritesLevelIds,
     MultiplayerModeSettings* multiplayerModeSettings,
-    int currentDlcPromoDisplayCount,
+    int32_t currentDlcPromoDisplayCount,
     StringW currentDlcPromoId,
     UserAgeCategory userAgeCategory,
     PlayerSensitivityFlag desiredSensitivityFlag
@@ -151,6 +146,8 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo* info) {
 
     Paper::Logger::RegisterFileContextId(MOD_ID);
 
+    getConfig().Init(modInfo);
+
     using namespace std;
 
     filesPath = filesystem::canonical(modloader::get_external_dir());
@@ -166,11 +163,9 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo* info) {
     } else
         filesystem::create_directory(GetBackupPath());
 
-    getConfig().Load();
-    lightsSet = getConfig().config.HasMember("lightsSet");
+    lightsSet = getConfig().lightsSet.GetValue();
     if (!lightsSet) {
-        getConfig().config.AddMember("lightsSet", true, getConfig().config.GetAllocator());
-        getConfig().Write();
+        getConfig().lightsSet.SetValue(true);
     }
 
     logger.info("Completed setup!");

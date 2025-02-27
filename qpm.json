@@ -49,19 +49,17 @@
   "dependencies": [
     {
       "id": "beatsaber-hook",
-      "versionRange": "^6.4.0",
+      "versionRange": "^6.4.1",
       "additionalData": {}
     },
     {
-      "id": "paper2_scotland2",
-      "versionRange": "^4.5.0",
-      "additionalData": {
-        "private": true
-      }
+      "id": "bs-cordl",
+      "versionRange": "^4030.0.0",
+      "additionalData": {}
     },
     {
-      "id": "bs-cordl",
-      "versionRange": "^4020.0.0",
+      "id": "config-utils",
+      "versionRange": "^2.0.2",
       "additionalData": {}
     },
     {
@@ -70,9 +68,11 @@
       "additionalData": {}
     },
     {
-      "id": "config-utils",
-      "versionRange": "^2.0.2",
-      "additionalData": {}
+      "id": "paper2_scotland2",
+      "versionRange": "^4.6.1",
+      "additionalData": {
+        "private": true
+      }
     },
     {
       "id": "scotland2",

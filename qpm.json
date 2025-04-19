@@ -6,7 +6,7 @@
   "info": {
     "name": "PlayerDataKeeper",
     "id": "datakeeper",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "url": null,
     "additionalData": {
       "overrideSoName": "libdatakeeper.so"
@@ -55,13 +55,11 @@
     {
       "id": "paper2_scotland2",
       "versionRange": "^4.5.0",
-      "additionalData": {
-        "private": true
-      }
+      "additionalData": {}
     },
     {
       "id": "bs-cordl",
-      "versionRange": "^4020.0.0",
+      "versionRange": "^4004.0.0",
       "additionalData": {}
     },
     {
@@ -78,8 +76,7 @@
       "id": "scotland2",
       "versionRange": "^0.1.6",
       "additionalData": {
-        "includeQmod": false,
-        "private": true
+        "includeQmod": false
       }
     }
   ]

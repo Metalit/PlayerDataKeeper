@@ -6,8 +6,8 @@
 
 #define BLACKLIST std::regex("tombstone_..")
 
-static inline constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);
-static inline modloader::ModInfo modInfo{MOD_ID, VERSION, 0};
+constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);
+static inline modloader::ModInfo const modInfo = {MOD_ID, VERSION, 0};
 
 #define PLAYERDATAKEEPER_EXPORT __attribute__((visibility("default")))
 #ifdef __cplusplus

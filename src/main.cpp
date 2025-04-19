@@ -1,8 +1,5 @@
 #include "main.hpp"
 
-#include <regex>
-#include <string>
-
 #include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
 #include "GlobalNamespace/ColorSchemesSettings.hpp"
 #include "GlobalNamespace/GameplayModifiers.hpp"
@@ -19,23 +16,22 @@
 #include "System/IO/File.hpp"
 #include "beatsaber-hook/shared/config/config-utils.hpp"
 #include "beatsaber-hook/shared/utils/hooking.hpp"
-#include "config.h"
+#include "config.hpp"
 #include "scotland2/shared/modloader.h"
 
 using namespace GlobalNamespace;
 using namespace System::IO;
-using namespace System::Collections::Generic;
 
 static bool lightsSet = false;
 static std::string filesPath;
 
-std::string GetBackupPath() {
+static constexpr auto copyopt = std::filesystem::copy_options::overwrite_existing;
+
+static inline std::string GetBackupPath() {
     return getConfig().backupPath.GetValue();
 }
 
-constexpr auto copyopt = std::filesystem::copy_options::overwrite_existing;
-
-void HandleSave(std::string filePath) {
+static void HandleSave(std::string filePath) {
     auto fullPath = std::filesystem::canonical(filePath);
     logger.info("File saved, path: {} ({})", fullPath.string(), filePath);
 
@@ -88,13 +84,13 @@ MAKE_HOOK_FIND_INSTANCE(
     PlayerSpecificSettings* playerSpecificSettings,
     PracticeSettings* practiceSettings,
     PlayerAllOverallStatsData* playerAllOverallStatsData,
-    List_1<PlayerLevelStatsData*>* levelsStatsData,
-    List_1<PlayerMissionStatsData*>* missionsStatsData,
-    List_1<StringW>* showedMissionHelpIds,
-    List_1<StringW>* guestPlayerNames,
+    List<PlayerLevelStatsData*>* levelsStatsData,
+    List<PlayerMissionStatsData*>* missionsStatsData,
+    List<StringW>* showedMissionHelpIds,
+    List<StringW>* guestPlayerNames,
     ColorSchemesSettings* colorSchemesSettings,
     OverrideEnvironmentSettings* overrideEnvironmentSettings,
-    List_1<StringW>* favoritesLevelIds,
+    List<StringW>* favoritesLevelIds,
     MultiplayerModeSettings* multiplayerModeSettings,
     int32_t currentDlcPromoDisplayCount,
     StringW currentDlcPromoId,
@@ -140,33 +136,27 @@ MAKE_HOOK_FIND_INSTANCE(
     );
 }
 
-// Called at the early stages of game loading
 PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo* info) {
     *info = modInfo.to_c();
-
     Paper::Logger::RegisterFileContextId(MOD_ID);
-
     getConfig().Init(modInfo);
 
-    using namespace std;
+    filesPath = std::filesystem::canonical(modloader::get_external_dir());
+    std::filesystem::create_directories(filesPath);
 
-    filesPath = filesystem::canonical(modloader::get_external_dir());
-    filesystem::create_directories(filesPath);
-
-    if (filesystem::exists(GetBackupPath())) {
-        for (auto const& file : filesystem::directory_iterator(GetBackupPath())) {
-            if (!filesystem::is_directory(file)) {
+    if (std::filesystem::exists(GetBackupPath())) {
+        for (auto const& file : std::filesystem::directory_iterator(GetBackupPath())) {
+            if (!std::filesystem::is_directory(file)) {
                 logger.info("Loading backup: {}", file.path().string());
-                filesystem::copy(file, filesPath / file.path().filename(), copyopt);
+                std::filesystem::copy(file, filesPath / file.path().filename(), copyopt);
             }
         }
     } else
-        filesystem::create_directory(GetBackupPath());
+        std::filesystem::create_directory(GetBackupPath());
 
     lightsSet = getConfig().lightsSet.GetValue();
-    if (!lightsSet) {
+    if (!lightsSet)
         getConfig().lightsSet.SetValue(true);
-    }
 
     logger.info("Completed setup!");
 }

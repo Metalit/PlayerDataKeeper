@@ -24,6 +24,7 @@ using namespace System::IO;
 
 static bool lightsSet = false;
 static std::string filesPath;
+static std::string localFilesPath;
 
 static constexpr auto copyopt = std::filesystem::copy_options::overwrite_existing;
 
@@ -31,14 +32,23 @@ static inline std::string GetBackupPath() {
     return getConfig().backupPath.GetValue();
 }
 
-static void HandleSave(std::string filePath) {
+static inline std::string GetLocalsBackupPath() {
+    return std::filesystem::path(getConfig().backupPath.GetValue()) / LOCAL_FILES_DIR;
+}
+
+static void HandleSave(std::string filePath, std::string checkPath, std::string backupPath) {
     auto fullPath = std::filesystem::canonical(filePath);
     logger.info("File saved, path: {} ({})", fullPath.string(), filePath);
 
-    if (fullPath.parent_path() == filesPath && !std::filesystem::is_directory(fullPath) && !std::regex_search(filePath, BLACKLIST)) {
+    if (fullPath.parent_path() == checkPath && !std::filesystem::is_directory(fullPath) && !std::regex_search(filePath, BLACKLIST)) {
         logger.info("Copying for backup: {} ({})", fullPath.string(), filePath);
-        std::filesystem::copy(fullPath, GetBackupPath() + fullPath.filename().string(), copyopt);
+        std::filesystem::copy(fullPath, backupPath / fullPath.filename(), copyopt);
     }
+}
+
+static void HandleSave(std::string filePath) {
+    HandleSave(filePath, filesPath, GetBackupPath());
+    HandleSave(filePath, localFilesPath, GetLocalsBackupPath());
 }
 
 MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void (*)(StringW, StringW)>(&File::WriteAllText), void, StringW path, StringW contents) {
@@ -136,23 +146,30 @@ MAKE_HOOK_FIND_INSTANCE(
     );
 }
 
+static void CopyFolder(std::string backupFolder, std::string destFolder) {
+    if (std::filesystem::exists(backupFolder)) {
+        for (auto const& file : std::filesystem::directory_iterator(backupFolder)) {
+            if (!std::filesystem::is_directory(file)) {
+                logger.info("Loading backup: {}", file.path().string());
+                std::filesystem::copy(file, destFolder / file.path().filename(), copyopt);
+            }
+        }
+    } else
+        std::filesystem::create_directories(backupFolder);
+}
+
 PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo* info) {
     *info = modInfo.to_c();
     Paper::Logger::RegisterFileContextId(MOD_ID);
     getConfig().Init(modInfo);
 
     filesPath = std::filesystem::canonical(modloader::get_external_dir());
+    localFilesPath = std::filesystem::path(filesPath).parent_path() / LOCAL_FILES_DIR;
     std::filesystem::create_directories(filesPath);
+    std::filesystem::create_directories(localFilesPath);
 
-    if (std::filesystem::exists(GetBackupPath())) {
-        for (auto const& file : std::filesystem::directory_iterator(GetBackupPath())) {
-            if (!std::filesystem::is_directory(file)) {
-                logger.info("Loading backup: {}", file.path().string());
-                std::filesystem::copy(file, filesPath / file.path().filename(), copyopt);
-            }
-        }
-    } else
-        std::filesystem::create_directory(GetBackupPath());
+    CopyFolder(GetBackupPath(), filesPath);
+    CopyFolder(GetLocalsBackupPath(), localFilesPath);
 
     lightsSet = getConfig().lightsSet.GetValue();
     if (!lightsSet)

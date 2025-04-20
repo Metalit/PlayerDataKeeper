@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
 
+# override mod id for consistent ModData folder
+set(MOD_ID "datakeeper")
+
 # include some defines automatically made by qpm
 include(qpm_defines.cmake)
 

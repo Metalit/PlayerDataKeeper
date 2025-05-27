@@ -2,14 +2,18 @@
 
 #include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
 #include "GlobalNamespace/ColorSchemesSettings.hpp"
+#include "GlobalNamespace/EnvironmentType.hpp"
+#include "GlobalNamespace/EnvironmentsListModel.hpp"
 #include "GlobalNamespace/GameplayModifiers.hpp"
 #include "GlobalNamespace/MultiplayerModeSettings.hpp"
 #include "GlobalNamespace/OverrideEnvironmentSettings.hpp"
 #include "GlobalNamespace/PlayerAgreements.hpp"
 #include "GlobalNamespace/PlayerAllOverallStatsData.hpp"
 #include "GlobalNamespace/PlayerData.hpp"
+#include "GlobalNamespace/PlayerDataFileModel.hpp"
 #include "GlobalNamespace/PlayerLevelStatsData.hpp"
 #include "GlobalNamespace/PlayerMissionStatsData.hpp"
+#include "GlobalNamespace/PlayerSaveData.hpp"
 #include "GlobalNamespace/PlayerSpecificSettings.hpp"
 #include "GlobalNamespace/PracticeSettings.hpp"
 #include "System/Collections/Generic/List_1.hpp"
@@ -140,6 +144,33 @@ MAKE_AUTO_HOOK_MATCH(
         userAgeCategory,
         desiredSensitivityFlag
     );
+}
+
+MAKE_AUTO_HOOK_MATCH(
+    PlayerDataFileModel_LoadFromCurrentVersion,
+    &PlayerDataFileModel::LoadFromCurrentVersion,
+    PlayerData*,
+    PlayerDataFileModel* self,
+    PlayerSaveData* playerSaveData
+) {
+    auto loadedData = PlayerDataFileModel_LoadFromCurrentVersion(self, playerSaveData);
+    if (!loadedData)
+        return loadedData;
+
+    auto player = playerSaveData->localPlayers->get_Item(0);
+
+    // fix override environment settings
+    bool override = player->overrideEnvironmentSettings->overrideEnvironments;
+    auto override360Env =
+        self->_environmentsListModel->GetEnvironmentInfoBySerializedName(player->overrideEnvironmentSettings->override360EnvironmentName);
+    auto overrideNormalEnv =
+        self->_environmentsListModel->GetEnvironmentInfoBySerializedName(player->overrideEnvironmentSettings->overrideNormalEnvironmentName);
+
+    loadedData->overrideEnvironmentSettings->overrideEnvironments = override;
+    loadedData->overrideEnvironmentSettings->SetEnvironmentInfoForType(EnvironmentType::Circle, override360Env);
+    loadedData->overrideEnvironmentSettings->SetEnvironmentInfoForType(EnvironmentType::Normal, overrideNormalEnv);
+
+    return loadedData;
 }
 
 static void CopyFolder(std::string backupFolder, std::string destFolder) {

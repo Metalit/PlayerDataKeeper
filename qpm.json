@@ -1,15 +1,15 @@
 {
-  "$schema": "https://raw.githubusercontent.com/QuestPackageManager/QPM.Package/refs/heads/main/qpm.schema.json",
   "version": "0.4.0",
   "sharedDir": "shared",
   "dependenciesDir": "extern",
   "info": {
     "name": "PlayerDataKeeper",
     "id": "datakeeper",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "url": null,
     "additionalData": {
-      "overrideSoName": "libdatakeeper.so"
+      "overrideSoName": "libdatakeeper.so",
+      "cmake": true
     }
   },
   "workspace": {
@@ -38,11 +38,7 @@
         "pwsh ./scripts/pull-tombstone.ps1 -analyze"
       ]
     },
-    "ndk": "^27.2.12479018",
-    "qmodIncludeDirs": [
-      "./build",
-      "./extern/libs"
-    ],
+    "qmodIncludeDirs": [],
     "qmodIncludeFiles": [],
     "qmodOutput": null
   },
@@ -59,7 +55,7 @@
     },
     {
       "id": "bs-cordl",
-      "versionRange": "^4004.0.0",
+      "versionRange": "^4005.0.0",
       "additionalData": {}
     },
     {

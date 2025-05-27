@@ -14,13 +14,13 @@
 #include "GlobalNamespace/PracticeSettings.hpp"
 #include "System/Collections/Generic/List_1.hpp"
 #include "System/IO/File.hpp"
-#include "beatsaber-hook/shared/config/config-utils.hpp"
-#include "beatsaber-hook/shared/utils/hooking.hpp"
 #include "config.hpp"
+#include "hooks.hpp"
 #include "scotland2/shared/modloader.h"
 
 using namespace GlobalNamespace;
 using namespace System::IO;
+using namespace System::Collections::Generic;
 
 static bool lightsSet = false;
 static std::string filesPath;
@@ -51,16 +51,14 @@ static void HandleSave(std::string filePath) {
     HandleSave(filePath, localFilesPath, GetLocalsBackupPath());
 }
 
-MAKE_HOOK_MATCH(File_WriteAllText, static_cast<void (*)(StringW, StringW)>(&File::WriteAllText), void, StringW path, StringW contents) {
-
+MAKE_AUTO_HOOK_MATCH(File_WriteAllText, &File::WriteAllText, void, StringW path, StringW contents) {
     File_WriteAllText(path, contents);
-
     HandleSave(path);
 }
 
-MAKE_HOOK_MATCH(
+MAKE_AUTO_HOOK_MATCH(
     File_Replace,
-    static_cast<void (*)(StringW, StringW, StringW, bool)>(&File::Replace),
+    &File::Replace,
     void,
     StringW sourceFileName,
     StringW destinationFileName,
@@ -68,14 +66,12 @@ MAKE_HOOK_MATCH(
     bool ignoreMetadataErrors
 ) {
     File_Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
-
     HandleSave(destinationFileName);
 }
 
-MAKE_HOOK_FIND_INSTANCE(
+MAKE_AUTO_HOOK_MATCH(
     PlayerData_ctor,
-    classof(PlayerData*),
-    ".ctor",
+    &PlayerData::_ctor,
     void,
     PlayerData* self,
     StringW playerId,
@@ -85,7 +81,7 @@ MAKE_HOOK_FIND_INSTANCE(
     bool agreedToEula,
     bool didSelectLanguage,
     bool agreedToMultiplayerDisclaimer,
-    int32_t didSelectRegionVersion,
+    int didSelectRegionVersion,
     StringW selectedAvatarSystemTypeId,
     PlayerAgreements* playerAgreements,
     BeatmapDifficulty lastSelectedBeatmapDifficulty,
@@ -94,15 +90,15 @@ MAKE_HOOK_FIND_INSTANCE(
     PlayerSpecificSettings* playerSpecificSettings,
     PracticeSettings* practiceSettings,
     PlayerAllOverallStatsData* playerAllOverallStatsData,
-    List<PlayerLevelStatsData*>* levelsStatsData,
-    List<PlayerMissionStatsData*>* missionsStatsData,
-    List<StringW>* showedMissionHelpIds,
-    List<StringW>* guestPlayerNames,
+    List_1<PlayerLevelStatsData*>* levelsStatsData,
+    List_1<PlayerMissionStatsData*>* missionsStatsData,
+    List_1<StringW>* showedMissionHelpIds,
+    List_1<StringW>* guestPlayerNames,
     ColorSchemesSettings* colorSchemesSettings,
     OverrideEnvironmentSettings* overrideEnvironmentSettings,
-    List<StringW>* favoritesLevelIds,
+    List_1<StringW>* favoritesLevelIds,
     MultiplayerModeSettings* multiplayerModeSettings,
-    int32_t currentDlcPromoDisplayCount,
+    int currentDlcPromoDisplayCount,
     StringW currentDlcPromoId,
     UserAgeCategory userAgeCategory,
     PlayerSensitivityFlag desiredSensitivityFlag
@@ -179,9 +175,5 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo* info) {
 }
 
 PLAYERDATAKEEPER_EXPORT_FUNC void load() {
-    logger.info("Installing hooks...");
-    INSTALL_HOOK(logger, File_WriteAllText);
-    INSTALL_HOOK(logger, File_Replace);
-    INSTALL_HOOK(logger, PlayerData_ctor);
-    logger.info("Installed all hooks!");
+    Hooks::Install();
 }

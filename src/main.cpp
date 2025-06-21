@@ -2,6 +2,7 @@
 
 #include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
 #include "GlobalNamespace/ColorSchemesSettings.hpp"
+#include "GlobalNamespace/EnvironmentInfoSO.hpp"
 #include "GlobalNamespace/EnvironmentType.hpp"
 #include "GlobalNamespace/EnvironmentsListModel.hpp"
 #include "GlobalNamespace/GameplayModifiers.hpp"
@@ -40,19 +41,19 @@ static inline std::string GetLocalsBackupPath() {
     return std::filesystem::path(getConfig().backupPath.GetValue()) / LOCAL_FILES_DIR;
 }
 
-static void HandleSave(std::string filePath, std::string checkPath, std::string backupPath) {
-    auto fullPath = std::filesystem::canonical(filePath);
-    logger.info("File saved, path: {} ({})", fullPath.string(), filePath);
-
-    if (fullPath.parent_path() == checkPath && !std::filesystem::is_directory(fullPath) && !std::regex_search(filePath, BLACKLIST)) {
-        logger.info("Copying for backup: {} ({})", fullPath.string(), filePath);
+static void HandleSave(std::filesystem::path fullPath, std::string checkPath, std::string backupPath) {
+    if (fullPath.parent_path() == checkPath && !std::filesystem::is_directory(fullPath) && !std::regex_search(fullPath.string(), BLACKLIST)) {
+        logger.info("Copying for backup: {} -> {}", fullPath.string(), backupPath);
         std::filesystem::copy(fullPath, backupPath / fullPath.filename(), copyopt);
     }
 }
 
 static void HandleSave(std::string filePath) {
-    HandleSave(filePath, filesPath, GetBackupPath());
-    HandleSave(filePath, localFilesPath, GetLocalsBackupPath());
+    auto fullPath = std::filesystem::canonical(filePath);
+    logger.info("File saved, path: {} ({})", fullPath.string(), filePath);
+
+    HandleSave(fullPath, filesPath, GetBackupPath());
+    HandleSave(fullPath, localFilesPath, GetLocalsBackupPath());
 }
 
 MAKE_AUTO_HOOK_MATCH(File_WriteAllText, &File::WriteAllText, void, StringW path, StringW contents) {
@@ -161,10 +162,13 @@ MAKE_AUTO_HOOK_MATCH(
 
     // fix override environment settings
     bool override = player->overrideEnvironmentSettings->overrideEnvironments;
-    auto override360Env =
-        self->_environmentsListModel->GetEnvironmentInfoBySerializedName(player->overrideEnvironmentSettings->override360EnvironmentName);
-    auto overrideNormalEnv =
-        self->_environmentsListModel->GetEnvironmentInfoBySerializedName(player->overrideEnvironmentSettings->overrideNormalEnvironmentName);
+    auto override360Env = self->GetEnvironmentInfoBySerializedName(player->overrideEnvironmentSettings->override360EnvironmentName);
+    auto overrideNormalEnv = self->GetEnvironmentInfoBySerializedName(player->overrideEnvironmentSettings->overrideNormalEnvironmentName);
+
+    if (!override360Env || override360Env->_environmentType != EnvironmentType::Circle)
+        override360Env = self->_environmentsListModel->GetFirstEnvironmentInfoWithType(EnvironmentType::Circle);
+    if (!overrideNormalEnv || overrideNormalEnv->_environmentType != EnvironmentType::Normal)
+        overrideNormalEnv = self->_environmentsListModel->GetFirstEnvironmentInfoWithType(EnvironmentType::Normal);
 
     loadedData->overrideEnvironmentSettings->overrideEnvironments = override;
     loadedData->overrideEnvironmentSettings->SetEnvironmentInfoForType(EnvironmentType::Circle, override360Env);

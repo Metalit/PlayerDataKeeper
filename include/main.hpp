@@ -4,7 +4,7 @@
 
 #include "paper2_scotland2/shared/logger.hpp"
 
-#define BLACKLIST std::regex("tombstone_..")
+#define BLACKLIST std::regex("tombstone_..|.*\\.tmp")
 #define LOCAL_FILES_DIR "no_backup"
 
 constexpr auto logger = Paper::ConstLoggerContext(MOD_ID);

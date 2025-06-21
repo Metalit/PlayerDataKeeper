@@ -5,7 +5,7 @@
   "info": {
     "name": "PlayerDataKeeper",
     "id": "datakeeper",
-    "version": "0.2.2",
+    "version": "0.3.0",
     "url": null,
     "additionalData": {
       "overrideSoName": "libdatakeeper.so",

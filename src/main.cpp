@@ -17,6 +17,7 @@
 #include "GlobalNamespace/PlayerSaveData.hpp"
 #include "GlobalNamespace/PlayerSpecificSettings.hpp"
 #include "GlobalNamespace/PracticeSettings.hpp"
+#include "OculusStudios/Platform/Core/UserAgeCategory.hpp"
 #include "System/Collections/Generic/List_1.hpp"
 #include "System/IO/File.hpp"
 #include "config.hpp"
@@ -105,7 +106,7 @@ MAKE_AUTO_HOOK_MATCH(
     MultiplayerModeSettings* multiplayerModeSettings,
     int currentDlcPromoDisplayCount,
     StringW currentDlcPromoId,
-    UserAgeCategory userAgeCategory,
+    OculusStudios::Platform::Core::UserAgeCategory userAgeCategory,
     PlayerSensitivityFlag desiredSensitivityFlag
 ) {
     if (!lightsSet) {

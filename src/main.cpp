@@ -1,6 +1,7 @@
 #include "main.hpp"
 
 #include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
+#include "GlobalNamespace/BeatmapCharacteristic.hpp"
 #include "GlobalNamespace/ColorSchemesSettings.hpp"
 #include "GlobalNamespace/EnvironmentInfoSO.hpp"
 #include "GlobalNamespace/EnvironmentType.hpp"
@@ -19,6 +20,7 @@
 #include "GlobalNamespace/PracticeSettings.hpp"
 #include "System/Collections/Generic/List_1.hpp"
 #include "System/IO/File.hpp"
+#include "System/ValueTuple_2.hpp"
 #include "config.hpp"
 #include "hooks.hpp"
 #include "scotland2/shared/modloader.h"
@@ -90,7 +92,7 @@ MAKE_AUTO_HOOK_MATCH(
     StringW selectedAvatarSystemTypeId,
     PlayerAgreements* playerAgreements,
     BeatmapDifficulty lastSelectedBeatmapDifficulty,
-    BeatmapCharacteristicSO* lastSelectedBeatmapCharacteristic,
+    BeatmapCharacteristic lastSelectedBeatmapCharacteristic,
     GameplayModifiers* gameplayModifiers,
     PlayerSpecificSettings* playerSpecificSettings,
     PracticeSettings* practiceSettings,
@@ -105,12 +107,13 @@ MAKE_AUTO_HOOK_MATCH(
     MultiplayerModeSettings* multiplayerModeSettings,
     int currentDlcPromoDisplayCount,
     StringW currentDlcPromoId,
-    UserAgeCategory userAgeCategory,
-    PlayerSensitivityFlag desiredSensitivityFlag
+    OculusStudios::Platform::Core::UserAgeCategory userAgeCategory,
+    PlayerSensitivityFlag desiredSensitivityFlag,
+    List_1<System::ValueTuple_2<StringW, int>>* promoCounters
 ) {
     if (!lightsSet) {
-        playerSpecificSettings->_environmentEffectsFilterDefaultPreset = EnvironmentEffectsFilterPreset::AllEffects;
-        playerSpecificSettings->_environmentEffectsFilterExpertPlusPreset = EnvironmentEffectsFilterPreset::AllEffects;
+        playerSpecificSettings->____environmentEffectsFilterDefaultPreset = EnvironmentEffectsFilterPreset::AllEffects;
+        playerSpecificSettings->____environmentEffectsFilterExpertPlusPreset = EnvironmentEffectsFilterPreset::AllEffects;
         lightsSet = true;
     }
 
@@ -143,7 +146,8 @@ MAKE_AUTO_HOOK_MATCH(
         currentDlcPromoDisplayCount,
         currentDlcPromoId,
         userAgeCategory,
-        desiredSensitivityFlag
+        desiredSensitivityFlag,
+        promoCounters
     );
 }
 
@@ -166,9 +170,9 @@ MAKE_AUTO_HOOK_MATCH(
     auto overrideNormalEnv = self->GetEnvironmentInfoBySerializedName(player->overrideEnvironmentSettings->overrideNormalEnvironmentName);
 
     if (!override360Env || override360Env->_environmentType != EnvironmentType::Circle)
-        override360Env = self->_environmentsListModel->GetFirstEnvironmentInfoWithType(EnvironmentType::Circle);
+        override360Env = self->____environmentsListModel->GetFirstEnvironmentInfoWithType(EnvironmentType::Circle);
     if (!overrideNormalEnv || overrideNormalEnv->_environmentType != EnvironmentType::Normal)
-        overrideNormalEnv = self->_environmentsListModel->GetFirstEnvironmentInfoWithType(EnvironmentType::Normal);
+        overrideNormalEnv = self->____environmentsListModel->GetFirstEnvironmentInfoWithType(EnvironmentType::Normal);
 
     loadedData->overrideEnvironmentSettings->overrideEnvironments = override;
     loadedData->overrideEnvironmentSettings->SetEnvironmentInfoForType(EnvironmentType::Circle, override360Env);
@@ -189,9 +193,11 @@ static void CopyFolder(std::string backupFolder, std::string destFolder) {
         std::filesystem::create_directories(backupFolder);
 }
 
-PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo* info) {
-    *info = modInfo.to_c();
-    Paper::Logger::RegisterFileContextId(MOD_ID);
+PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
+    info.id = MOD_ID;
+    info.version = VERSION;
+    info.version_long = 0;
+    modInfo.assign(info);
     getConfig().Init(modInfo);
 
     filesPath = std::filesystem::canonical(modloader::get_external_dir());

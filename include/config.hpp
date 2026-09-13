@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config-utils/shared/config-utils.hpp"
 #include "main.hpp"
+#include "config-utils/shared/config-utils.hpp"
 
 DECLARE_CONFIG(Config) {
     CONFIG_VALUE(backupPath, std::string, "backupPath", get_data_dir(modInfo), "Where to backup the data.");

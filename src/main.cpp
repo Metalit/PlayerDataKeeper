@@ -1,7 +1,11 @@
 #include "main.hpp"
 
-#include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
+#include "config.hpp"
+#include "hooks.hpp"
+#include "scotland2/shared/modloader.h"
+
 #include "GlobalNamespace/BeatmapCharacteristic.hpp"
+#include "GlobalNamespace/BeatmapCharacteristicSO.hpp"
 #include "GlobalNamespace/ColorSchemesSettings.hpp"
 #include "GlobalNamespace/EnvironmentInfoSO.hpp"
 #include "GlobalNamespace/EnvironmentType.hpp"
@@ -21,9 +25,6 @@
 #include "System/Collections/Generic/List_1.hpp"
 #include "System/IO/File.hpp"
 #include "System/ValueTuple_2.hpp"
-#include "config.hpp"
-#include "hooks.hpp"
-#include "scotland2/shared/modloader.h"
 
 using namespace GlobalNamespace;
 using namespace System::IO;
@@ -193,11 +194,8 @@ static void CopyFolder(std::string backupFolder, std::string destFolder) {
         std::filesystem::create_directories(backupFolder);
 }
 
-PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
-    info.id = MOD_ID;
-    info.version = VERSION;
-    info.version_long = 0;
-    modInfo.assign(info);
+extern "C" __attribute__((visibility("default"))) void setup(CModInfo* info) {
+    *info = modInfo.to_c();
     getConfig().Init(modInfo);
 
     filesPath = std::filesystem::canonical(modloader::get_external_dir());
@@ -215,6 +213,6 @@ PLAYERDATAKEEPER_EXPORT_FUNC void setup(CModInfo& info) {
     logger.info("Completed setup!");
 }
 
-PLAYERDATAKEEPER_EXPORT_FUNC void load() {
+extern "C" __attribute__((visibility("default"))) void late_load() {
     Hooks::Install();
 }

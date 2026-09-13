@@ -8,7 +8,7 @@
       "name": "PlayerDataKeeper",
       "id": "datakeeper",
       "version": "0.2.6",
-      "url": null,
+      "url": "https://github.com/Metalit/PlayerDataKeeper",
       "additionalData": {
         "overrideSoName": "libdatakeeper.so",
         "cmake": true
@@ -17,30 +17,22 @@
     "workspace": {
       "scripts": {
         "build": [
-          "pwsh ./scripts/build.ps1 $0?"
-        ],
-        "clean": [
-          "pwsh ./scripts/build.ps1 -clean"
+          "python ./extern/includes/mod-scripts/shared/build.py $0:?"
         ],
         "copy": [
-          "pwsh ./scripts/copy.ps1 $0:?",
-          "pwsh ./scripts/restart-game.ps1"
+          "python ./extern/includes/mod-scripts/shared/cpy.py $0:?"
+        ],
+        "debug": [
+          "python ./extern/includes/mod-scripts/shared/debug.py $0:?"
         ],
         "log": [
-          "pwsh ./scripts/start-logging.ps1 $0:?"
+          "python ./extern/includes/mod-scripts/shared/log.py $0:?"
         ],
-        "qmod": [
-          "pwsh ./scripts/build.ps1 $0?",
-          "pwsh ./scripts/createqmod.ps1"
+        "profile": [
+          "python ./extern/includes/mod-scripts/shared/profile.py $0:?"
         ],
         "restart": [
-          "pwsh ./scripts/restart-game.ps1"
-        ],
-        "stack": [
-          "pwsh ./scripts/ndk-stack.ps1"
-        ],
-        "tomb": [
-          "pwsh ./scripts/pull-tombstone.ps1 -analyze"
+          "python ./extern/includes/mod-scripts/shared/restart.py $0:?"
         ]
       },
       "ndk": "^29.0.14206865",
@@ -53,13 +45,30 @@
     },
     "dependencies": [
       {
-        "id": "beatsaber-hook",
-        "versionRange": "^8.2.1",
+        "id": "mod-scripts",
+        "versionRange": "^1.0.2",
         "additionalData": {}
       },
       {
+        "id": "scotland2",
+        "versionRange": "^0.1.7",
+        "additionalData": {
+          "includeQmod": false
+        }
+      },
+      {
         "id": "paper2_scotland2",
-        "versionRange": "^4.7.0",
+        "versionRange": "^4.8.0",
+        "additionalData": {}
+      },
+      {
+        "id": "flamingo",
+        "versionRange": "^1.2.1",
+        "additionalData": {}
+      },
+      {
+        "id": "beatsaber-hook",
+        "versionRange": "^8.2.1",
         "additionalData": {}
       },
       {
@@ -68,40 +77,12 @@
         "additionalData": {}
       },
       {
-        "id": "custom-types",
-        "versionRange": "^0.20.0",
-        "additionalData": {}
-      },
-      {
-        "id": "config-utils",
-        "versionRange": "^3.0.0",
-        "additionalData": {}
-      },
-      {
-        "id": "scotland2",
-        "versionRange": "^0.1.6",
-        "additionalData": {
-          "includeQmod": false,
-          "private": true
-        }
-      },
-      {
-        "id": "fmt",
-        "versionRange": "^11.0.2",
-        "additionalData": {}
-      },
-      {
-        "id": "flamingo",
-        "versionRange": "^1.1.2",
-        "additionalData": {}
-      },
-      {
         "id": "reflectcpp",
         "versionRange": "^0.25.0",
         "additionalData": {}
       },
       {
-        "id": "rapidjson-macros",
+        "id": "config-utils",
         "versionRange": "^3.0.0",
         "additionalData": {}
       }
@@ -110,35 +91,19 @@
   "restoredDependencies": [
     {
       "dependency": {
-        "id": "custom-types",
-        "versionRange": "=0.20.1",
-        "additionalData": {
-          "soLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.1/libcustom-types.so",
-          "debugSoLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.1/debug_libcustom-types.so",
-          "overrideSoName": "libcustom-types.so",
-          "modLink": "https://github.com/QuestPackageManager/Il2CppQuestTypePatching/releases/download/v0.20.1/CustomTypes.qmod",
-          "branchName": "version/v0_20_1",
-          "compileOptions": {
-            "cppFlags": [
-              "-Wno-invalid-offsetof"
-            ]
-          },
-          "cmake": true
-        }
-      },
-      "version": "0.20.1"
-    },
-    {
-      "dependency": {
-        "id": "rapidjson-macros",
-        "versionRange": "=3.0.0",
+        "id": "libil2cpp",
+        "versionRange": "=0.5.0",
         "additionalData": {
           "headersOnly": true,
-          "branchName": "version/v3_0_0",
-          "cmake": false
+          "compileOptions": {
+            "systemIncludes": [
+              "il2cpp/external/baselib/Include",
+              "il2cpp/external/baselib/Platforms/Android/Include"
+            ]
+          }
         }
       },
-      "version": "3.0.0"
+      "version": "0.5.0"
     },
     {
       "dependency": {
@@ -256,19 +221,16 @@
     },
     {
       "dependency": {
-        "id": "libil2cpp",
-        "versionRange": "=0.5.0",
+        "id": "scotland2",
+        "versionRange": "=0.1.7",
         "additionalData": {
-          "headersOnly": true,
-          "compileOptions": {
-            "systemIncludes": [
-              "il2cpp/external/baselib/Include",
-              "il2cpp/external/baselib/Platforms/Android/Include"
-            ]
-          }
+          "soLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.7/libsl2.so",
+          "debugSoLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.7/debug_libsl2.so",
+          "overrideSoName": "libsl2.so",
+          "branchName": "version/v0_1_7"
         }
       },
-      "version": "0.5.0"
+      "version": "0.1.7"
     },
     {
       "dependency": {
@@ -286,16 +248,13 @@
     },
     {
       "dependency": {
-        "id": "scotland2",
-        "versionRange": "=0.1.7",
+        "id": "mod-scripts",
+        "versionRange": "=1.0.2",
         "additionalData": {
-          "soLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.7/libsl2.so",
-          "debugSoLink": "https://github.com/sc2ad/scotland2/releases/download/v0.1.7/debug_libsl2.so",
-          "overrideSoName": "libsl2.so",
-          "branchName": "version/v0_1_7"
+          "headersOnly": true
         }
       },
-      "version": "0.1.7"
+      "version": "1.0.2"
     }
   ]
 }

@@ -1,4 +1,7 @@
 #include "main.hpp"
+#include "atomic-copy.hpp"
+
+#include <mutex>
 
 #include "config.hpp"
 #include "hooks.hpp"
@@ -34,7 +37,21 @@ static bool lightsSet = false;
 static std::string filesPath;
 static std::string localFilesPath;
 
-static constexpr auto copyopt = std::filesystem::copy_options::overwrite_existing;
+static std::mutex& BackupMutex() {
+    static std::mutex mutex;
+    return mutex;
+}
+
+static bool CopyContent(const std::filesystem::path& source, const std::filesystem::path& destination) {
+    auto result = DataKeeper::AtomicCopy(source.string(), destination.string(), source.filename() == "PlayerData.dat");
+    if (!result) {
+        logger.error("DataKeeper copy failed at {} (errno {}): {} -> {}; existing destination retained",
+                     result.operation, result.error, source.string(), destination.string());
+        return false;
+    }
+    logger.info("DataKeeper content replacement committed: {} -> {}", source.string(), destination.string());
+    return true;
+}
 
 static inline std::string GetBackupPath() {
     return getConfig().backupPath.GetValue();
@@ -47,16 +64,22 @@ static inline std::string GetLocalsBackupPath() {
 static void HandleSave(std::filesystem::path fullPath, std::string checkPath, std::string backupPath) {
     if (fullPath.parent_path() == checkPath && !std::filesystem::is_directory(fullPath) && !std::regex_search(fullPath.string(), BLACKLIST)) {
         logger.info("Copying for backup: {} -> {}", fullPath.string(), backupPath);
-        std::filesystem::copy(fullPath, backupPath / fullPath.filename(), copyopt);
+        CopyContent(fullPath, backupPath / fullPath.filename());
     }
 }
 
 static void HandleSave(std::string filePath) {
-    auto fullPath = std::filesystem::canonical(filePath);
-    logger.info("File saved, path: {} ({})", fullPath.string(), filePath);
-
-    HandleSave(fullPath, filesPath, GetBackupPath());
-    HandleSave(fullPath, localFilesPath, GetLocalsBackupPath());
+    std::lock_guard guard(BackupMutex());
+    try {
+        auto fullPath = std::filesystem::canonical(filePath);
+        logger.info("File saved, path: {} ({})", fullPath.string(), filePath);
+        HandleSave(fullPath, filesPath, GetBackupPath());
+        HandleSave(fullPath, localFilesPath, GetLocalsBackupPath());
+    } catch (const std::exception& error) {
+        // The game save already succeeded. Report a backup failure without
+        // throwing across the managed File hook or damaging the previous copy.
+        logger.error("DataKeeper could not back up {}: {}", filePath, error.what());
+    }
 }
 
 MAKE_AUTO_HOOK_MATCH(File_WriteAllText, &File::WriteAllText, void, StringW path, StringW contents) {
@@ -186,8 +209,13 @@ static void CopyFolder(std::string backupFolder, std::string destFolder) {
     if (std::filesystem::exists(backupFolder)) {
         for (auto const& file : std::filesystem::directory_iterator(backupFolder)) {
             if (!std::filesystem::is_directory(file)) {
+                auto filename = file.path().filename().string();
+                // A process interrupted before rename may leave our private
+                // staging file. It must never become restored game data.
+                if (filename.find(".datakeeper-") != std::string::npos && filename.ends_with(".tmp"))
+                    continue;
                 logger.info("Loading backup: {}", file.path().string());
-                std::filesystem::copy(file, destFolder / file.path().filename(), copyopt);
+                CopyContent(file.path(), destFolder / file.path().filename());
             }
         }
     } else
@@ -198,13 +226,16 @@ extern "C" __attribute__((visibility("default"))) void setup(CModInfo* info) {
     *info = modInfo.to_c();
     getConfig().Init(modInfo);
 
-    filesPath = std::filesystem::canonical(modloader::get_external_dir());
-    localFilesPath = std::filesystem::path(filesPath).parent_path() / LOCAL_FILES_DIR;
-    std::filesystem::create_directories(filesPath);
-    std::filesystem::create_directories(localFilesPath);
-
-    CopyFolder(GetBackupPath(), filesPath);
-    CopyFolder(GetLocalsBackupPath(), localFilesPath);
+    try {
+        std::filesystem::create_directories(modloader::get_external_dir());
+        filesPath = std::filesystem::canonical(modloader::get_external_dir());
+        localFilesPath = std::filesystem::path(filesPath).parent_path() / LOCAL_FILES_DIR;
+        std::filesystem::create_directories(localFilesPath);
+        CopyFolder(GetBackupPath(), filesPath);
+        CopyFolder(GetLocalsBackupPath(), localFilesPath);
+    } catch (const std::exception& error) {
+        logger.error("DataKeeper could not restore backups: {}; existing game data retained", error.what());
+    }
 
     lightsSet = getConfig().lightsSet.GetValue();
     if (!lightsSet)
